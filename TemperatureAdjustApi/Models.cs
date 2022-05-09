@@ -2,14 +2,14 @@ namespace TemperatureAdjustApi
 {
     public class WeatherForecastPost
     {
-        public int temperatura { get; set; }
-        public int? temperaturaAmbiente { get; set; }
-        public int? temperatureMinima { get; set; }
+        public double temperatura { get; set; }
+        public double? temperaturaAmbiente { get; set; }
+        public double? temperatureMinima { get; set; }
     }
 
     public class WeatherForecastGet
     {
-        public int temperatura { get; set; }
+        public double temperatura { get; set; }
     }
     public class VentiladorPost
     {
@@ -18,6 +18,6 @@ namespace TemperatureAdjustApi
     public class VentiladorGet
     {
         public bool estado { get; set; }
-        public int temperatura { get; set; }
+        public double temperatura { get; set; }
     }
 }

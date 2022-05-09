@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace TemperatureAdjustApi.Controllers
@@ -15,7 +16,7 @@ namespace TemperatureAdjustApi.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
         private HttpClient _httpClient = new HttpClient();
-        private readonly string Ip = "";
+        private readonly string Ip = "http://192.168.0.175:3000";
         public WeatherForecastController(ILogger<WeatherForecastController> logger)
         {
             _logger = logger;
@@ -27,16 +28,30 @@ namespace TemperatureAdjustApi.Controllers
             _httpClient.BaseAddress = new Uri(Ip);
             var toSend = JsonConvert.SerializeObject(wf);
             HttpContent content = new StringContent(toSend);
-            var resp = await _httpClient.PostAsync(_httpClient.BaseAddress + "/temperatura", content);
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var resp = await _httpClient.PostAsync("/temperatura", content);
             if(!resp.IsSuccessStatusCode)
                 throw new Exception(await resp.Content.ReadAsStringAsync());
+            return Ok(resp);
+        }
+
+        [HttpPost("/ventilador")]
+        public async Task<IActionResult> Ventilador([FromBody] VentiladorPost wf)
+        {
+            _httpClient.BaseAddress = new Uri(Ip);
+            var toSend = JsonConvert.SerializeObject(wf);
+            HttpContent content = new StringContent(toSend, Encoding.UTF8, "application/json");
+            var resp = await _httpClient.PostAsync("/ventilador", content);
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception(resp.Content.ToString());
             return Ok(resp);
         }
 
         [HttpGet("/temperature")]
         public async Task<IActionResult> GetRoomTemperature()
         {
-            var resp = await _httpClient.GetAsync(_httpClient.BaseAddress + "/temperatura");
+            _httpClient.BaseAddress = new Uri(Ip);
+            var resp = await _httpClient.GetAsync("/temperatura");
             var response = JsonConvert.DeserializeObject<WeatherForecastGet>(await resp.Content.ReadAsStringAsync());
             if(response != null)
             {
@@ -46,10 +61,23 @@ namespace TemperatureAdjustApi.Controllers
                     {
                         estado = true
                     };
-                    _httpClient.BaseAddress = new Uri(Ip);
                     var toSend = JsonConvert.SerializeObject(vp);
-                    HttpContent content = new StringContent(toSend);
-                    var respVentiladorOn = await _httpClient.PostAsync(_httpClient.BaseAddress + "/temperatura", content);
+                    HttpContent content = new StringContent(toSend, Encoding.UTF8, "application/json");
+                    var respVentiladorOn = await _httpClient.PostAsync("/ventilador", content);
+                    if (!respVentiladorOn.IsSuccessStatusCode)
+                        throw new Exception(await respVentiladorOn.Content.ReadAsStringAsync());
+                    Console.WriteLine(respVentiladorOn.Content);
+                    return Ok(respVentiladorOn.Content);
+                }
+                if (response.temperatura <= 25)
+                {
+                    VentiladorPost vp = new VentiladorPost
+                    {
+                        estado = false
+                    };
+                    var toSend = JsonConvert.SerializeObject(vp);
+                    HttpContent content = new StringContent(toSend, Encoding.UTF8, "application/json");
+                    var respVentiladorOn = await _httpClient.PostAsync("/ventilador", content);
                     if (!respVentiladorOn.IsSuccessStatusCode)
                         throw new Exception(await respVentiladorOn.Content.ReadAsStringAsync());
                     return Ok(respVentiladorOn);
